@@ -104,7 +104,10 @@ export default function Dashboard() {
                         {isPass ? <CheckCircle size={20} color="var(--jamb-green)" /> : <XCircle size={20} color="var(--error-color)" />}
                         <div>
                           <strong>Score: {scaledScore} / 400</strong>
-                          <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                          <div style={{ fontSize: '13px', color: 'var(--jamb-green)', fontWeight: 'bold' }}>
+                            {res.course || 'Global Exam'}
+                          </div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                             {new Date(res.timestamp).toLocaleString()}
                           </div>
                         </div>
