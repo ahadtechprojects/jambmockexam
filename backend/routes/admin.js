@@ -1,5 +1,6 @@
 const express = require('express');
 const db = require('../db');
+const { collection, getDocs } = require('firebase/firestore');
 
 const router = express.Router();
 
@@ -19,46 +20,76 @@ const verifyAdmin = (req, res, next) => {
 };
 
 // Get All Users (Detailed)
-router.get('/users', verifyAdmin, (req, res) => {
-  // Query users and count their total exams
-  const query = `
-    SELECT 
-      users.id, 
-      users.firstName, 
-      users.lastName, 
-      users.email, 
-      users.regNumber, 
-      count(results.id) as examsTaken
-    FROM users
-    LEFT JOIN results ON users.id = results.user_id
-    WHERE users.role != 'admin'
-    GROUP BY users.id
-  `;
-  db.all(query, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
-    res.json(rows);
-  });
+router.get('/users', verifyAdmin, async (req, res) => {
+  try {
+    const usersSnapshot = await getDocs(collection(db, 'users'));
+    const resultsSnapshot = await getDocs(collection(db, 'results'));
+    
+    // Calculate total exams taken per user
+    const examsCount = {};
+    resultsSnapshot.forEach(doc => {
+      const data = doc.data();
+      examsCount[data.user_id] = (examsCount[data.user_id] || 0) + 1;
+    });
+
+    const users = [];
+    usersSnapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.role !== 'admin') {
+        users.push({
+          id: doc.id,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          regNumber: data.regNumber,
+          examsTaken: examsCount[doc.id] || 0
+        });
+      }
+    });
+
+    res.json(users);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // Get All Results
-router.get('/results', verifyAdmin, (req, res) => {
-  const query = `
-    SELECT 
-      results.id, 
-      results.score, 
-      results.total, 
-      results.timestamp, 
-      users.firstName, 
-      users.lastName, 
-      users.regNumber
-    FROM results
-    JOIN users ON results.user_id = users.id
-    ORDER BY results.timestamp DESC
-  `;
-  db.all(query, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
-    res.json(rows);
-  });
+router.get('/results', verifyAdmin, async (req, res) => {
+  try {
+    const resultsSnapshot = await getDocs(collection(db, 'results'));
+    const usersSnapshot = await getDocs(collection(db, 'users'));
+    
+    // Map users by ID for quick lookup
+    const usersMap = {};
+    usersSnapshot.forEach(doc => {
+      usersMap[doc.id] = doc.data();
+    });
+
+    const results = [];
+    resultsSnapshot.forEach(doc => {
+      const data = doc.data();
+      const user = usersMap[data.user_id] || {};
+      
+      results.push({
+        id: doc.id,
+        score: data.score,
+        total: data.total,
+        timestamp: data.timestamp,
+        firstName: user.firstName || 'Unknown',
+        lastName: user.lastName || 'User',
+        regNumber: user.regNumber || 'N/A'
+      });
+    });
+
+    // Sort by timestamp descending
+    results.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 module.exports = router;

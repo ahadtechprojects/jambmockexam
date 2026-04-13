@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth');
 const examRoutes = require('./routes/exam');
 const adminRoutes = require('./routes/admin');
 const db = require('./db');
+const { collection, getDocs, query, where, addDoc } = require('firebase/firestore');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,25 +20,33 @@ app.use('/api/exam', examRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
-  res.send('JAMB Mock CBT API is running');
+  res.send('JAMB Mock CBT API is running with Firebase!');
 });
 
-// Delay execution to let table creation finish
-setTimeout(() => {
-  db.get(`SELECT * FROM users WHERE role = 'admin'`, async (err, admin) => {
-    if (!admin) {
+// Delay execution to let Firebase initialize
+setTimeout(async () => {
+  try {
+    const q = query(collection(db, 'users'), where('role', '==', 'admin'));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
       const bcrypt = require('bcrypt');
       const hashedPassword = await bcrypt.hash('admin123', 10);
-      db.run(
-        `INSERT INTO users (firstName, lastName, email, regNumber, password, role) VALUES (?, ?, ?, ?, ?, ?)`,
-        ['System', 'Administrator', 'admin@jamb.mock', 'ADMIN0001', hashedPassword, 'admin'],
-        (err) => {
-          if (!err) console.log('Created default admin: email "admin@jamb.mock", password "admin123"');
-        }
-      );
+      
+      await addDoc(collection(db, 'users'), {
+        firstName: 'System',
+        lastName: 'Administrator',
+        email: 'admin@jamb.mock',
+        regNumber: 'ADMIN0001',
+        password: hashedPassword,
+        role: 'admin'
+      });
+      console.log('Created default admin: email "admin@jamb.mock", password "admin123"');
     }
-  });
-}, 1000);
+  } catch (error) {
+    console.error('Error ensuring default admin:', error);
+  }
+}, 3000);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

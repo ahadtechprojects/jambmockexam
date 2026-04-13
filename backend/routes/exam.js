@@ -1,5 +1,6 @@
 const express = require('express');
 const db = require('../db');
+const { collection, addDoc, getDocs, query, where } = require('firebase/firestore');
 
 const router = express.Router();
 
@@ -19,25 +20,47 @@ const verifyToken = (req, res, next) => {
 };
 
 // Submit Exam Result
-router.post('/results', verifyToken, (req, res) => {
+router.post('/results', verifyToken, async (req, res) => {
   const { score, total } = req.body;
 
   if (score === undefined || total === undefined) {
     return res.status(400).json({ error: 'Score and total are required' });
   }
 
-  db.run(`INSERT INTO results (user_id, score, total) VALUES (?, ?, ?)`, [req.userId, score, total], function(err) {
-    if (err) return res.status(500).json({ error: 'Database error' });
-    res.status(201).json({ message: 'Result saved successfully', resultId: this.lastID });
-  });
+  try {
+    const docRef = await addDoc(collection(db, 'results'), {
+      user_id: req.userId,
+      score,
+      total,
+      timestamp: new Date().toISOString()
+    });
+    
+    res.status(201).json({ message: 'Result saved successfully', resultId: docRef.id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // Get User's Latest Result
-router.get('/results', verifyToken, (req, res) => {
-  db.all(`SELECT * FROM results WHERE user_id = ? ORDER BY timestamp DESC`, [req.userId], (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
-    res.json(rows);
-  });
+router.get('/results', verifyToken, async (req, res) => {
+  try {
+    const q = query(collection(db, 'results'), where('user_id', '==', req.userId));
+    const snapshot = await getDocs(q);
+    
+    const results = [];
+    snapshot.forEach(doc => {
+      results.push({ id: doc.id, ...doc.data() });
+    });
+    
+    // Sort in memory to avoid Firestore composite index errors
+    results.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 module.exports = router;
