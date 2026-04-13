@@ -41,7 +41,7 @@ export default function Exam() {
     const userSpecificSubjects = rawSubjects.filter(sub => userSubjectIds.includes(sub.id));
 
     // Sort to match the order in user.subjects if possible, but keeping English first is standard
-    constizedized = userSpecificSubjects.map(sub => ({
+    const randomizedized = userSpecificSubjects.map(sub => ({
       ...sub,
       questions: shuffleArray(sub.questions)
     }));
