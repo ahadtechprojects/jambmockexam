@@ -15,8 +15,8 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Fetch all users
     const BASE_URL = import.meta.env.VITE_API_URL;
+    // Fetch all users
     fetch(`${BASE_URL}/api/admin/users`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
@@ -54,30 +54,31 @@ export default function AdminDashboard() {
           
           <div className="glass-panel" style={{ padding: '25px', background: 'white' }}>
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px', color: '#334155' }}>
-              <Users /> All Candidates
+              <Users /> Registered Candidates
             </h3>
             
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc', color: '#64748b', textAlign: 'left' }}>
-                    <th style={{ padding: '12px' }}>Reg No</th>
-                    <th style={{ padding: '12px' }}>Name</th>
-                    <th style={{ padding: '12px' }}>Email</th>
+                    <th style={{ padding: '12px' }}>Reg No / Name</th>
+                    <th style={{ padding: '12px' }}>Course</th>
                     <th style={{ padding: '12px', textAlign: 'center' }}>Exams</th>
                   </tr>
                 </thead>
                 <tbody>
                   {students.map(st => (
                     <tr key={st.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '12px', fontWeight: '600', fontFamily: 'monospace', color: 'var(--jamb-green)' }}>{st.regNumber}</td>
-                      <td style={{ padding: '12px' }}>{st.firstName} {st.lastName}</td>
-                      <td style={{ padding: '12px', color: '#666' }}>{st.email}</td>
+                      <td style={{ padding: '12px' }}>
+                        <div style={{ fontWeight: '600', fontFamily: 'monospace', color: 'var(--jamb-green)' }}>{st.regNumber}</div>
+                        <div style={{ fontSize: '0.85rem', color: '#666' }}>{st.firstName} {st.lastName}</div>
+                      </td>
+                      <td style={{ padding: '12px', fontWeight: '500', color: '#334155' }}>{st.course || 'Global'}</td>
                       <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold' }}>{st.examsTaken || 0}</td>
                     </tr>
                   ))}
                   {students.length === 0 && (
-                    <tr><td colSpan="4" style={{ padding: '20px', textAlign: 'center', color: '#888' }}>No candidates found.</td></tr>
+                    <tr><td colSpan="3" style={{ padding: '20px', textAlign: 'center', color: '#888' }}>No candidates found.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -90,13 +91,12 @@ export default function AdminDashboard() {
             </h3>
             
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc', color: '#64748b', textAlign: 'left' }}>
                     <th style={{ padding: '12px' }}>Candidate Name</th>
-                    <th style={{ padding: '12px' }}>Reg No</th>
-                    <th style={{ padding: '12px' }}>JAMB Score (400)</th>
-                    <th style={{ padding: '12px' }}>Ratio</th>
+                    <th style={{ padding: '12px' }}>Course</th>
+                    <th style={{ padding: '12px' }}>JAMB Score</th>
                     <th style={{ padding: '12px' }}>Status</th>
                     <th style={{ padding: '12px' }}>Timestamp</th>
                   </tr>
@@ -107,17 +107,19 @@ export default function AdminDashboard() {
                     const isPass = scaledScore >= 200;
                     return (
                       <tr key={res.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '12px', fontWeight: '500' }}>{res.firstName} {res.lastName}</td>
-                        <td style={{ padding: '12px', fontFamily: 'monospace', color: '#666' }}>{res.regNumber}</td>
+                        <td style={{ padding: '12px', fontWeight: '500' }}>
+                           {res.firstName} {res.lastName}
+                           <div style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#999' }}>{res.regNumber}</div>
+                        </td>
+                        <td style={{ padding: '12px', fontSize: '0.85rem', color: '#666' }}>{res.course || 'N/A'}</td>
                         <td style={{ padding: '12px', fontWeight: 'bold', color: isPass ? 'var(--jamb-green)' : 'var(--error-color)', fontSize: '1.1rem' }}>
                           {scaledScore}
                         </td>
-                        <td style={{ padding: '12px', color: '#666', fontSize: '0.85rem' }}>{res.score}/{res.total}</td>
                         <td style={{ padding: '12px' }}>
                           <span style={{ 
                             padding: '4px 8px', 
                             borderRadius: '4px', 
-                            fontSize: '0.75rem', 
+                            fontSize: '0.7rem', 
                             fontWeight: 'bold', 
                             background: isPass ? 'rgba(10,127,63,0.1)' : 'rgba(211,47,47,0.1)',
                             color: isPass ? 'var(--jamb-green)' : 'var(--error-color)'
@@ -125,14 +127,14 @@ export default function AdminDashboard() {
                             {isPass ? 'PASS' : 'FAIL'}
                           </span>
                         </td>
-                        <td style={{ padding: '12px', color: '#94a3b8', fontSize: '0.85rem' }}>
+                        <td style={{ padding: '12px', color: '#94a3b8', fontSize: '0.8rem' }}>
                           {new Date(res.timestamp).toLocaleString()}
                         </td>
                       </tr>
                     );
                   })}
                   {results.length === 0 && (
-                    <tr><td colSpan="6" style={{ padding: '20px', textAlign: 'center', color: '#888' }}>No exam records found.</td></tr>
+                    <tr><td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#888' }}>No exam records found.</td></tr>
                   )}
                 </tbody>
               </table>

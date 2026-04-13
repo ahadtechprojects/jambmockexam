@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { User, LogOut, FileText, CheckCircle, XCircle, GraduationCap } from 'lucide-react';
+import { User, LogOut, FileText, CheckCircle, XCircle, GraduationCap, Book } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, token, logout } = useContext(AuthContext);
@@ -55,12 +55,22 @@ export default function Dashboard() {
             Welcome, {user.firstName} {user.lastName}!
           </h2>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '1.1rem', color: 'var(--text-main)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
             <div>
-              <strong>Reg NO:</strong> <span style={{ fontFamily: 'monospace', fontSize: '1.15rem', color: 'var(--jamb-green)', background: 'rgba(10, 127, 63, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>{user.regNumber || 'Pending'}</span>
+              <strong style={{ color: '#666', fontSize: '0.8rem', textTransform: 'uppercase' }}>Registration Number</strong>
+              <div style={{ fontFamily: 'monospace', fontSize: '1.2rem', color: 'var(--jamb-green)', background: 'rgba(10, 127, 63, 0.1)', padding: '6px 12px', borderRadius: '8px', display: 'inline-block', marginTop: '5px' }}>
+                {user.regNumber || 'Pending'}
+              </div>
             </div>
             <div>
-              <strong>Email:</strong> {user.email}
+              <strong style={{ color: '#666', fontSize: '0.8rem', textTransform: 'uppercase' }}>Chosen Course</strong>
+              <div style={{ fontSize: '1.1rem', color: 'var(--jamb-dark)', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '5px' }}>
+                <Book size={18} color="var(--jamb-green)" /> {user.course || 'Not Specified'}
+              </div>
+            </div>
+            <div>
+              <strong style={{ color: '#666', fontSize: '0.8rem', textTransform: 'uppercase' }}>Email</strong>
+              <div style={{ fontSize: '1rem', color: '#444', marginTop: '5px' }}>{user.email}</div>
             </div>
           </div>
         </div>
@@ -71,7 +81,7 @@ export default function Dashboard() {
             <FileText size={48} color="var(--jamb-green)" style={{ marginBottom: '15px' }} />
             <h2 style={{ marginBottom: '15px' }}>Start Mock Examination</h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: '25px' }}>
-              Test your readiness with our simulated CBT exam environment covering 4 subjects.
+              Take a full simulation of your {user.course || 'JAMB'} exam combinations.
             </p>
             <button className="btn" onClick={() => navigate('/exam')}>Begin Exam</button>
           </div>

@@ -30,27 +30,37 @@ export default function Exam() {
 
   // Initialize and Shuffle on Mount
   useEffect(() => {
-    const randomized = rawSubjects.map(sub => ({
+    if (!user) return;
+
+    // Filter subjects based on User's registered package
+    // Fallback to original arts pack if subjects not defined (for older accounts)
+    const userSubjectIds = user.subjects && user.subjects.length > 0 
+      ? user.subjects 
+      : ['eng', 'lit', 'gov', 'crk'];
+
+    const userSpecificSubjects = rawSubjects.filter(sub => userSubjectIds.includes(sub.id));
+
+    // Sort to match the order in user.subjects if possible, but keeping English first is standard
+    constizedized = userSpecificSubjects.map(sub => ({
       ...sub,
       questions: shuffleArray(sub.questions)
     }));
-    setShuffledSubjects(randomized);
-  }, []);
+    
+    setShuffledSubjects(randomizedized);
+  }, [user]);
 
   useEffect(() => {
     if (!user) navigate('/login');
   }, [user, navigate]);
 
-  // Submit Exam Function - Wrapped in useCallback for use in Effects
+  // Submit Exam Function
   const submitExam = useCallback(async (finalSubjects = shuffledSubjects, finalAnswers = answers) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     let score = 0;
     let total = 0;
 
-    const subjectsToScore = finalSubjects.length > 0 ? finalSubjects : randomizedInitial();
-
-    subjectsToScore.forEach(sub => {
+    finalSubjects.forEach(sub => {
       sub.questions.forEach(q => {
         total++;
         if (finalAnswers[q.id] === q.answer) score++;
@@ -73,9 +83,6 @@ export default function Exam() {
     }
   }, [isSubmitting, shuffledSubjects, answers, token, navigate]);
 
-  // Helper for fail-safe scoring if state is lost
-  const randomizedInitial = () => rawSubjects.map(sub => ({ ...sub, questions: shuffleArray(sub.questions) }));
-
   const handleNextSubject = useCallback(() => {
     if (subjectIndex < shuffledSubjects.length - 1) {
       setSubjectIndex(prev => prev + 1);
@@ -94,7 +101,7 @@ export default function Exam() {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          handleNextSubject(); // Auto move to next subject when time is up
+          handleNextSubject(); 
           return 0;
         }
         return prev - 1;
@@ -108,7 +115,7 @@ export default function Exam() {
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexDirection: 'column', gap: '20px' }}>
         <GraduationCap size={48} className="animate-bounce" />
         <h2 style={{ letterSpacing: '2px' }}>INITIALIZING EXAM SERVER...</h2>
-        <p style={{ opacity: 0.7 }}>Please wait while we randomize your questions</p>
+        <p style={{ opacity: 0.7 }}>Preparing your specific course subjects</p>
       </div>
     );
   }
@@ -116,7 +123,6 @@ export default function Exam() {
   const currentSubject = shuffledSubjects[subjectIndex];
   const currentQuestion = currentSubject?.questions[questionIndex];
 
-  // Robust check for currentQuestion to prevent "g is undefined" error
   if (!currentQuestion) {
     return <div style={{ color: 'white', textAlign: 'center', marginTop: '100px' }}>Loading Question...</div>;
   }
@@ -139,9 +145,6 @@ export default function Exam() {
       const prevSub = shuffledSubjects[subjectIndex - 1];
       setSubjectIndex(prev => prev - 1);
       setQuestionIndex(prevSub.questions.length - 1);
-      // Note: We don't reset the timer when going BACK, as the user is "reviewing" their already completed or timed out subject?
-      // Actually, per JAMB rules, you usually can't go back to a previous subject once it's closed, but here we allow review.
-      // We will keep the current subject's timer.
     }
   };
 
@@ -169,7 +172,7 @@ export default function Exam() {
         <div className="glass-panel" style={{ overflow: 'visible' }}>
           <div style={{ background: 'var(--jamb-green)', color: 'white', padding: '20px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTopLeftRadius: '16px', borderTopRightRadius: '16px', zIndex: 2, position: 'relative' }}>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.8rem', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '1px' }}>Subject {subjectIndex + 1} of 4</span>
+              <span style={{ fontSize: '0.8rem', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '1px' }}>Subject {subjectIndex + 1} of {shuffledSubjects.length}</span>
               <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{currentSubject.name}</h2>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.25)', padding: '6px 15px', borderRadius: '20px', fontSize: '0.95rem', fontWeight: '600' }}>
