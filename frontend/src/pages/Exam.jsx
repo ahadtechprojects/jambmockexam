@@ -106,8 +106,9 @@ export default function Exam() {
   if (shuffledSubjects.length === 0) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexDirection: 'column', gap: '20px' }}>
-        <GraduationCap size={48} className="animate-pulse" />
-        <h2>Preparing Examination...</h2>
+        <GraduationCap size={48} className="animate-bounce" />
+        <h2 style={{ letterSpacing: '2px' }}>INITIALIZING EXAM SERVER...</h2>
+        <p style={{ opacity: 0.7 }}>Please wait while we randomize your questions</p>
       </div>
     );
   }
