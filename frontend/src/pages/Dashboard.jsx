@@ -73,6 +73,12 @@ export default function Dashboard() {
               <div style={{ fontSize: '1rem', color: '#444', marginTop: '5px' }}>{user.email}</div>
             </div>
           </div>
+          
+          {!user.course && (
+            <div style={{ marginTop: '25px', padding: '15px', background: 'rgba(211, 47, 47, 0.1)', borderLeft: '4px solid var(--error-color)', borderRadius: '4px', fontSize: '0.9rem', color: '#666' }}>
+              <strong>Profile Incomplete:</strong> Your chosen course is missing. Please <Link to="/register" style={{ color: 'var(--error-color)', fontWeight: 'bold' }}>re-register</Link> or contact support to have your mock battery assigned.
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
