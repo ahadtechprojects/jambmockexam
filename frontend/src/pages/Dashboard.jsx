@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { User, LogOut, FileText, CheckCircle, GraduationCap } from 'lucide-react';
+import { User, LogOut, FileText, CheckCircle, XCircle, GraduationCap } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, token, logout } = useContext(AuthContext);
@@ -79,25 +79,32 @@ export default function Dashboard() {
           <div className="glass-panel" style={{ padding: '30px' }}>
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
               <CheckCircle color="var(--jamb-green)" />
-              Recent Results
+              Recent Results (Scaled / 400)
             </h3>
             {pastResults.length === 0 ? (
               <p style={{ color: 'var(--text-muted)' }}>You have no recorded exams yet.</p>
             ) : (
               <ul style={{ listStyle: 'none', padding: 0 }}>
-                {pastResults.slice(0, 5).map(res => (
-                  <li key={res.id} style={{ padding: '15px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between' }}>
-                    <div>
-                      <strong>Score: {res.score} / {res.total}</strong>
-                      <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-                        {new Date(res.timestamp).toLocaleString()}
+                {pastResults.slice(0, 5).map(res => {
+                  const scaledScore = Math.round((res.score / res.total) * 400);
+                  const isPass = scaledScore >= 200;
+                  return (
+                    <li key={res.id} style={{ padding: '15px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {isPass ? <CheckCircle size={20} color="var(--jamb-green)" /> : <XCircle size={20} color="var(--error-color)" />}
+                        <div>
+                          <strong>Score: {scaledScore} / 400</strong>
+                          <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                            {new Date(res.timestamp).toLocaleString()}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div style={{ fontWeight: 'bold', color: 'var(--jamb-green)', alignSelf: 'center', fontSize: '1.2rem' }}>
-                      {Math.round((res.score / res.total) * 100)}%
-                    </div>
-                  </li>
-                ))}
+                      <div style={{ fontWeight: 'bold', color: isPass ? 'var(--jamb-green)' : 'var(--error-color)', alignSelf: 'center', fontSize: '0.9rem', background: isPass ? 'rgba(10,127,63,0.1)' : 'rgba(211,47,47,0.1)', padding: '4px 10px', borderRadius: '15px' }}>
+                        {isPass ? 'PASS' : 'FAIL'}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>

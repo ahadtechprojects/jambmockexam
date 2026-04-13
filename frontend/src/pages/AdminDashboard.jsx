@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Shield, Users, LogOut, FileText } from 'lucide-react';
+import { Shield, Users, LogOut, FileText, CheckCircle, XCircle } from 'lucide-react';
 
 export default function AdminDashboard() {
   const { user, token, logout } = useContext(AuthContext);
@@ -50,7 +50,7 @@ export default function AdminDashboard() {
       </header>
 
       <main className="main-container animate-fade-in" style={{ maxWidth: '1400px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2فر', gap: '30px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '30px' }}>
           
           <div className="glass-panel" style={{ padding: '25px', background: 'white' }}>
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px', color: '#334155' }}>
@@ -95,21 +95,35 @@ export default function AdminDashboard() {
                   <tr style={{ background: '#f8fafc', color: '#64748b', textAlign: 'left' }}>
                     <th style={{ padding: '12px' }}>Candidate Name</th>
                     <th style={{ padding: '12px' }}>Reg No</th>
-                    <th style={{ padding: '12px' }}>Score Ratio</th>
-                    <th style={{ padding: '12px' }}>Percentage</th>
+                    <th style={{ padding: '12px' }}>JAMB Score (400)</th>
+                    <th style={{ padding: '12px' }}>Ratio</th>
+                    <th style={{ padding: '12px' }}>Status</th>
                     <th style={{ padding: '12px' }}>Timestamp</th>
                   </tr>
                 </thead>
                 <tbody>
                   {results.map(res => {
-                    const pct = Math.round((res.score / res.total) * 100);
+                    const scaledScore = Math.round((res.score / res.total) * 400);
+                    const isPass = scaledScore >= 200;
                     return (
                       <tr key={res.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                         <td style={{ padding: '12px', fontWeight: '500' }}>{res.firstName} {res.lastName}</td>
                         <td style={{ padding: '12px', fontFamily: 'monospace', color: '#666' }}>{res.regNumber}</td>
-                        <td style={{ padding: '12px', fontWeight: 'bold' }}>{res.score} / {res.total}</td>
-                        <td style={{ padding: '12px', fontWeight: 'bold', color: pct >= 50 ? 'var(--jamb-green)' : 'var(--error-color)' }}>
-                          {pct}%
+                        <td style={{ padding: '12px', fontWeight: 'bold', color: isPass ? 'var(--jamb-green)' : 'var(--error-color)', fontSize: '1.1rem' }}>
+                          {scaledScore}
+                        </td>
+                        <td style={{ padding: '12px', color: '#666', fontSize: '0.85rem' }}>{res.score}/{res.total}</td>
+                        <td style={{ padding: '12px' }}>
+                          <span style={{ 
+                            padding: '4px 8px', 
+                            borderRadius: '4px', 
+                            fontSize: '0.75rem', 
+                            fontWeight: 'bold', 
+                            background: isPass ? 'rgba(10,127,63,0.1)' : 'rgba(211,47,47,0.1)',
+                            color: isPass ? 'var(--jamb-green)' : 'var(--error-color)'
+                          }}>
+                            {isPass ? 'PASS' : 'FAIL'}
+                          </span>
                         </td>
                         <td style={{ padding: '12px', color: '#94a3b8', fontSize: '0.85rem' }}>
                           {new Date(res.timestamp).toLocaleString()}
@@ -118,7 +132,7 @@ export default function AdminDashboard() {
                     );
                   })}
                   {results.length === 0 && (
-                    <tr><td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#888' }}>No exam records found.</td></tr>
+                    <tr><td colSpan="6" style={{ padding: '20px', textAlign: 'center', color: '#888' }}>No exam records found.</td></tr>
                   )}
                 </tbody>
               </table>
