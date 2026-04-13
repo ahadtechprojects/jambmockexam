@@ -1,24 +1,41 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { subjects } from '../data/QA';
+import { subjects as rawSubjects } from '../data/QA';
 import { AuthContext } from '../context/AuthContext';
 import { Clock, GraduationCap, ChevronLeft, ChevronRight } from 'lucide-react';
+
+// Fisher-Yates Shuffle Utility
+const shuffleArray = (array) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[shuffled[i]]];
+  }
+  return shuffled;
+};
 
 export default function Exam() {
   const { user, token } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  const [shuffledSubjects, setShuffledSubjects] = useState([]);
   const [subjectIndex, setSubjectIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
   
-  // Timer is global: 15 mins (900s)
-  const [globalTimeLeft, setGlobalTimeLeft] = useState(900);
+  // Timer is global: 60 mins (3600s)
+  const [globalTimeLeft, setGlobalTimeLeft] = useState(3600);
   
   const [answers, setAnswers] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const currentSubject = subjects[subjectIndex];
-  const currentQuestion = currentSubject.questions[questionIndex];
+  // Initialize and Shuffle on Mount
+  useEffect(() => {
+    const randomized = rawSubjects.map(sub => ({
+      ...sub,
+      questions: shuffleArray(sub.questions)
+    }));
+    setShuffledSubjects(randomized);
+  }, []);
 
   useEffect(() => {
     if (!user) navigate('/login');
@@ -37,12 +54,16 @@ export default function Exam() {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [shuffledSubjects]); // Dependency on shuffledSubjects to ensure submitExam can clear interval correctly
 
+  if (shuffledSubjects.length === 0) return <div style={{ color: 'white', textAlign: 'center', marginTop: '100px' }}>Loading Examination Interface...</div>;
+
+  const currentSubject = shuffledSubjects[subjectIndex];
+  const currentQuestion = currentSubject.questions[questionIndex];
   const hasAnsweredCurrent = !!answers[currentQuestion.id];
 
   const handleNextSubject = () => {
-    if (subjectIndex < subjects.length - 1) {
+    if (subjectIndex < shuffledSubjects.length - 1) {
       setSubjectIndex(prev => prev + 1);
       setQuestionIndex(0);
     } else {
@@ -51,13 +72,10 @@ export default function Exam() {
   };
 
   const handleNextQuestion = () => {
-    // Cannot proceed if not answered
     if (!hasAnsweredCurrent) return;
-
     if (questionIndex < currentSubject.questions.length - 1) {
       setQuestionIndex(prev => prev + 1);
     } else {
-      // Reached the end of questions for this subject
       handleNextSubject();
     }
   };
@@ -66,9 +84,8 @@ export default function Exam() {
     if (questionIndex > 0) {
       setQuestionIndex(prev => prev - 1);
     } else if (subjectIndex > 0) {
-      // If we are at the very first question of a subject, allow navigating back to the previous subject's last question
       setSubjectIndex(prev => prev - 1);
-      setQuestionIndex(subjects[subjectIndex - 1].questions.length - 1);
+      setQuestionIndex(shuffledSubjects[subjectIndex - 1].questions.length - 1);
     }
   };
 
@@ -78,7 +95,7 @@ export default function Exam() {
     let score = 0;
     let total = 0;
 
-    subjects.forEach(sub => {
+    shuffledSubjects.forEach(sub => {
       sub.questions.forEach(q => {
         total++;
         if (answers[q.id] === q.answer) score++;
@@ -97,9 +114,7 @@ export default function Exam() {
       });
       navigate('/results', { state: { score, total } });
     } catch (err) {
-      alert('Failed to submit results. Auto-redirecting.');
       navigate('/results', { state: { score, total } });
-      setIsSubmitting(false);
     }
   };
 
@@ -107,7 +122,6 @@ export default function Exam() {
     setAnswers({ ...answers, [currentQuestion.id]: opt });
   };
 
-  // Prevent back navigation to previous question if we are on the very first question of the exam
   const isFirstQuestionGlobal = subjectIndex === 0 && questionIndex === 0;
 
   return (
@@ -117,18 +131,15 @@ export default function Exam() {
           <GraduationCap /> JAMB CBT
         </h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem', fontWeight: 'bold' }}>
-          <Clock color={globalTimeLeft < 120 ? '#ffb3b3' : 'white'} />
-          <span style={{ color: globalTimeLeft < 120 ? '#ffb3b3' : 'white' }}>
+          <Clock color={globalTimeLeft < 300 ? '#ffb3b3' : 'white'} />
+          <span style={{ color: globalTimeLeft < 300 ? '#ffb3b3' : 'white' }}>
             {Math.floor(globalTimeLeft / 60)}:{String(globalTimeLeft % 60).padStart(2, '0')}
           </span>
         </div>
       </header>
 
       <main className="main-container animate-fade-in" style={{ maxWidth: '850px', marginTop: '30px' }}>
-        
-        {/* Strict Exam Container */}
         <div className="glass-panel" style={{ overflow: 'visible' }}>
-          
           <div style={{ background: 'var(--jamb-green)', color: 'white', padding: '20px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTopLeftRadius: '16px', borderTopRightRadius: '16px', zIndex: 2, position: 'relative' }}>
             <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{currentSubject.name}</h2>
             <div style={{ background: 'rgba(255,255,255,0.25)', padding: '6px 15px', borderRadius: '20px', fontSize: '0.95rem', fontWeight: '600' }}>
@@ -178,9 +189,7 @@ export default function Exam() {
               })}
             </div>
 
-            {/* Controls */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '45px', paddingTop: '25px', borderTop: '1px solid rgba(0,0,0,0.1)' }}>
-              
               <button 
                 className="btn btn-secondary" 
                 onClick={handlePrevQuestion}
@@ -200,14 +209,12 @@ export default function Exam() {
                   padding: '12px 30px'
                 }}
               >
-                {questionIndex === currentSubject.questions.length - 1 && subjectIndex === subjects.length - 1 
+                {questionIndex === currentSubject.questions.length - 1 && subjectIndex === shuffledSubjects.length - 1 
                   ? 'Submit Exam' 
                   : (questionIndex === currentSubject.questions.length - 1 ? 'Next Subject' : 'Next')}
                 <ChevronRight size={20} />
               </button>
-
             </div>
-
           </div>
         </div>
       </main>
