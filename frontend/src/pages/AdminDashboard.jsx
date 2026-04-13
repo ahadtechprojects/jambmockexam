@@ -16,7 +16,8 @@ export default function AdminDashboard() {
     }
 
     // Fetch all users
-    fetch('http://localhost:5000/api/admin/users', {
+    const BASE_URL = import.meta.env.VITE_API_URL;
+    fetch(`${BASE_URL}/api/admin/users`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -26,7 +27,7 @@ export default function AdminDashboard() {
       .catch(console.error);
 
     // Fetch all results
-    fetch('http://localhost:5000/api/admin/results', {
+    fetch(`${BASE_URL}/api/admin/results`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())

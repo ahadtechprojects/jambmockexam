@@ -15,7 +15,8 @@ export default function Dashboard() {
     }
 
     // Fetch user results
-    fetch('http://localhost:5000/api/exam/results', {
+    const BASE_URL = import.meta.env.VITE_API_URL;
+    fetch(`${BASE_URL}/api/exam/results`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())

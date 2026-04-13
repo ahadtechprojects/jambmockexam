@@ -86,7 +86,8 @@ export default function Exam() {
     });
 
     try {
-      await fetch('http://localhost:5000/api/exam/results', {
+      const BASE_URL = import.meta.env.VITE_API_URL;
+      await fetch(`${BASE_URL}/api/exam/results`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
