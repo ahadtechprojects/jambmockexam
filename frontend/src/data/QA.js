@@ -195,8 +195,8 @@ const crkBase = [
 ];
 
 export const subjects = [
-  { id: 'eng', name: "Use of English", questions: engBase },
-  { id: 'gov', name: "Government", questions: govBase },
-  { id: 'lit', name: "Literature in English", questions: litBase },
-  { id: 'crk', name: "CRK", questions: crkBase }
+  { id: 'eng', name: "Use of English", questions: engBase.map((q, i) => ({ ...q, id: `eng-${i + 1}` })) },
+  { id: 'gov', name: "Government", questions: govBase.map((q, i) => ({ ...q, id: `gov-${i + 1}` })) },
+  { id: 'lit', name: "Literature in English", questions: litBase.map((q, i) => ({ ...q, id: `lit-${i + 1}` })) },
+  { id: 'crk', name: "CRK", questions: crkBase.map((q, i) => ({ ...q, id: `crk-${i + 1}` })) }
 ];

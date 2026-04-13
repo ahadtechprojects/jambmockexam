@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { subjects as rawSubjects } from '../data/QA';
 import { AuthContext } from '../context/AuthContext';
@@ -9,7 +9,7 @@ const shuffleArray = (array) => {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[shuffled[i]]];
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
 };
@@ -22,8 +22,8 @@ export default function Exam() {
   const [subjectIndex, setSubjectIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
   
-  // Timer is global: 60 mins (3600s)
-  const [globalTimeLeft, setGlobalTimeLeft] = useState(3600);
+  // Timer per subject: 15 mins (900s)
+  const [timeLeft, setTimeLeft] = useState(900);
   
   const [answers, setAnswers] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,64 +41,19 @@ export default function Exam() {
     if (!user) navigate('/login');
   }, [user, navigate]);
 
-  // Global Timer Effect
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setGlobalTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          submitExam(); // Auto submit when global timer hits 0
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [shuffledSubjects]); // Dependency on shuffledSubjects to ensure submitExam can clear interval correctly
-
-  if (shuffledSubjects.length === 0) return <div style={{ color: 'white', textAlign: 'center', marginTop: '100px' }}>Loading Examination Interface...</div>;
-
-  const currentSubject = shuffledSubjects[subjectIndex];
-  const currentQuestion = currentSubject.questions[questionIndex];
-  const hasAnsweredCurrent = !!answers[currentQuestion.id];
-
-  const handleNextSubject = () => {
-    if (subjectIndex < shuffledSubjects.length - 1) {
-      setSubjectIndex(prev => prev + 1);
-      setQuestionIndex(0);
-    } else {
-      submitExam();
-    }
-  };
-
-  const handleNextQuestion = () => {
-    if (!hasAnsweredCurrent) return;
-    if (questionIndex < currentSubject.questions.length - 1) {
-      setQuestionIndex(prev => prev + 1);
-    } else {
-      handleNextSubject();
-    }
-  };
-
-  const handlePrevQuestion = () => {
-    if (questionIndex > 0) {
-      setQuestionIndex(prev => prev - 1);
-    } else if (subjectIndex > 0) {
-      setSubjectIndex(prev => prev - 1);
-      setQuestionIndex(shuffledSubjects[subjectIndex - 1].questions.length - 1);
-    }
-  };
-
-  const submitExam = async () => {
+  // Submit Exam Function - Wrapped in useCallback for use in Effects
+  const submitExam = useCallback(async (finalSubjects = shuffledSubjects, finalAnswers = answers) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     let score = 0;
     let total = 0;
 
-    shuffledSubjects.forEach(sub => {
+    const subjectsToScore = finalSubjects.length > 0 ? finalSubjects : randomizedInitial();
+
+    subjectsToScore.forEach(sub => {
       sub.questions.forEach(q => {
         total++;
-        if (answers[q.id] === q.answer) score++;
+        if (finalAnswers[q.id] === q.answer) score++;
       });
     });
 
@@ -116,6 +71,77 @@ export default function Exam() {
     } catch (err) {
       navigate('/results', { state: { score, total } });
     }
+  }, [isSubmitting, shuffledSubjects, answers, token, navigate]);
+
+  // Helper for fail-safe scoring if state is lost
+  const randomizedInitial = () => rawSubjects.map(sub => ({ ...sub, questions: shuffleArray(sub.questions) }));
+
+  const handleNextSubject = useCallback(() => {
+    if (subjectIndex < shuffledSubjects.length - 1) {
+      setSubjectIndex(prev => prev + 1);
+      setQuestionIndex(0);
+      setTimeLeft(900); // Reset timer for next subject
+    } else {
+      submitExam();
+    }
+  }, [subjectIndex, shuffledSubjects, submitExam]);
+
+  // Subject Timer Effect
+  useEffect(() => {
+    if (shuffledSubjects.length === 0 || isSubmitting) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          handleNextSubject(); // Auto move to next subject when time is up
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [subjectIndex, shuffledSubjects.length, isSubmitting, handleNextSubject]);
+
+  if (shuffledSubjects.length === 0) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexDirection: 'column', gap: '20px' }}>
+        <GraduationCap size={48} className="animate-pulse" />
+        <h2>Preparing Examination...</h2>
+      </div>
+    );
+  }
+
+  const currentSubject = shuffledSubjects[subjectIndex];
+  const currentQuestion = currentSubject?.questions[questionIndex];
+
+  // Robust check for currentQuestion to prevent "g is undefined" error
+  if (!currentQuestion) {
+    return <div style={{ color: 'white', textAlign: 'center', marginTop: '100px' }}>Loading Question...</div>;
+  }
+
+  const hasAnsweredCurrent = !!answers[currentQuestion.id];
+
+  const handleNextQuestion = () => {
+    if (!hasAnsweredCurrent) return;
+    if (questionIndex < currentSubject.questions.length - 1) {
+      setQuestionIndex(prev => prev + 1);
+    } else {
+      handleNextSubject();
+    }
+  };
+
+  const handlePrevQuestion = () => {
+    if (questionIndex > 0) {
+      setQuestionIndex(prev => prev - 1);
+    } else if (subjectIndex > 0) {
+      const prevSub = shuffledSubjects[subjectIndex - 1];
+      setSubjectIndex(prev => prev - 1);
+      setQuestionIndex(prevSub.questions.length - 1);
+      // Note: We don't reset the timer when going BACK, as the user is "reviewing" their already completed or timed out subject?
+      // Actually, per JAMB rules, you usually can't go back to a previous subject once it's closed, but here we allow review.
+      // We will keep the current subject's timer.
+    }
   };
 
   const selectOption = (opt) => {
@@ -130,10 +156,10 @@ export default function Exam() {
         <h1 style={{ fontSize: '1.5rem', margin: 0, display: 'flex', alignItems: 'center', gap: '8px'}}>
           <GraduationCap /> JAMB CBT
         </h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem', fontWeight: 'bold' }}>
-          <Clock color={globalTimeLeft < 300 ? '#ffb3b3' : 'white'} />
-          <span style={{ color: globalTimeLeft < 300 ? '#ffb3b3' : 'white' }}>
-            {Math.floor(globalTimeLeft / 60)}:{String(globalTimeLeft % 60).padStart(2, '0')}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem', fontWeight: 'bold', background: 'rgba(255,255,255,0.1)', padding: '5px 15px', borderRadius: '12px' }}>
+          <Clock color={timeLeft < 120 ? '#ffb3b3' : 'white'} size={20} />
+          <span style={{ color: timeLeft < 120 ? '#ffb3b3' : 'white' }}>
+            {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
           </span>
         </div>
       </header>
@@ -141,7 +167,10 @@ export default function Exam() {
       <main className="main-container animate-fade-in" style={{ maxWidth: '850px', marginTop: '30px' }}>
         <div className="glass-panel" style={{ overflow: 'visible' }}>
           <div style={{ background: 'var(--jamb-green)', color: 'white', padding: '20px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTopLeftRadius: '16px', borderTopRightRadius: '16px', zIndex: 2, position: 'relative' }}>
-            <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{currentSubject.name}</h2>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.8rem', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '1px' }}>Subject {subjectIndex + 1} of 4</span>
+              <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{currentSubject.name}</h2>
+            </div>
             <div style={{ background: 'rgba(255,255,255,0.25)', padding: '6px 15px', borderRadius: '20px', fontSize: '0.95rem', fontWeight: '600' }}>
               Q {questionIndex + 1} of {currentSubject.questions.length}
             </div>
