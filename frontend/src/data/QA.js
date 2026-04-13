@@ -503,18 +503,24 @@ const crkBase = [
 ];
 
 export const COURSE_COMBINATIONS = {
-  "Medicine": ['eng', 'bio', 'chy', 'phy'],
+  // SCIENCE
+  "Medicine / Surgery": ['eng', 'bio', 'chy', 'phy'],
   "Engineering": ['eng', 'mat', 'phy', 'chy'],
   "Computer Science": ['eng', 'mat', 'phy', 'chy'],
   "Pharmacy": ['eng', 'bio', 'chy', 'phy'],
-  "Accounting": ['eng', 'mat', 'eco', 'gov'],
+
+  // COMMERCIAL
+  "Accounting": ['eng', 'mat', 'eco', 'com'],
   "Business Administration": ['eng', 'mat', 'eco', 'com'],
-  "Banking & Finance": ['eng', 'mat', 'eco', 'com'],
-  "Marketing": ['eng', 'eco', 'com', 'gov'],
+  "Banking & Finance": ['eng', 'mat', 'eco', 'gov'],
+  "Marketing": ['eng', 'mat', 'eco', 'gov'],
+
+  // ARTS / HUMANITIES
   "Law": ['eng', 'lit', 'gov', 'crk'],
   "Mass Communication": ['eng', 'lit', 'gov', 'crk'],
   "Theatre Arts": ['eng', 'lit', 'gov', 'crk'],
   "International Relations": ['eng', 'gov', 'eco', 'lit'],
+
   "Default": ['eng', 'gov', 'lit', 'crk']
 };
 

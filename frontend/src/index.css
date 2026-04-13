@@ -192,3 +192,82 @@ body {
   max-width: 1200px;
   margin: 0 auto;
 }
+
+/* COURSE SELECTOR PREMIUM STYLES */
+.discipline-tabs {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.discipline-tab {
+  flex: 1;
+  padding: 15px;
+  border-radius: 12px;
+  border: 2px solid #eee;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  font-weight: bold;
+  color: #666;
+}
+
+.discipline-tab:hover {
+  border-color: var(--jamb-green);
+  background: rgba(10, 127, 63, 0.05);
+}
+
+.discipline-tab.active {
+  background: var(--jamb-green);
+  color: white;
+  border-color: var(--jamb-green);
+  box-shadow: 0 4px 15px rgba(10, 127, 63, 0.3);
+}
+
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.course-card {
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 80px;
+}
+
+.course-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+  border-color: var(--jamb-green);
+}
+
+.course-card.active {
+  background: rgba(10, 127, 63, 0.1);
+  border: 2px solid var(--jamb-green);
+  color: var(--jamb-green);
+  font-weight: 700;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease forwards;
+}
