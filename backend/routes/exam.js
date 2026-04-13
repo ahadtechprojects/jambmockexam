@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { collection, addDoc, getDocs, query, where } = require('firebase/firestore');
+const { collection, addDoc, getDocs, query, where, doc, getDoc } = require('firebase/firestore');
 
 const router = express.Router();
 
@@ -28,10 +28,15 @@ router.post('/results', verifyToken, async (req, res) => {
   }
 
   try {
+    const userDocRef = doc(db, 'users', req.userId);
+    const userSnap = await getDoc(userDocRef);
+    const userData = userSnap.exists() ? userSnap.data() : {};
+
     const docRef = await addDoc(collection(db, 'results'), {
       user_id: req.userId,
       score,
       total,
+      course: userData.course || 'Not Specified',
       timestamp: new Date().toISOString()
     });
     

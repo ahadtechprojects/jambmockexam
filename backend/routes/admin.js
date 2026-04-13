@@ -42,6 +42,7 @@ router.get('/users', verifyAdmin, async (req, res) => {
           lastName: data.lastName,
           email: data.email,
           regNumber: data.regNumber,
+          course: data.course || 'Not Specified',
           examsTaken: examsCount[doc.id] || 0
         });
       }
@@ -78,7 +79,8 @@ router.get('/results', verifyAdmin, async (req, res) => {
         timestamp: data.timestamp,
         firstName: user.firstName || 'Unknown',
         lastName: user.lastName || 'User',
-        regNumber: user.regNumber || 'N/A'
+        regNumber: user.regNumber || 'N/A',
+        course: user.course || data.course || 'N/A'
       });
     });
 

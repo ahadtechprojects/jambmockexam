@@ -22,14 +22,13 @@ const generateRegNumber = (firstName, lastName) => {
 
 // Register User
 router.post('/register', async (req, res) => {
-  const { firstName, lastName, email, password } = req.body;
-  if (!firstName || !lastName || !email || !password) {
-    return res.status(400).json({ error: 'All fields are required' });
+  const { firstName, lastName, email, password, course, subjects } = req.body;
+  if (!firstName || !lastName || !email || !password || !course) {
+    return res.status(400).json({ error: 'All fields including Course are required' });
   }
 
   try {
     const usersRef = collection(db, 'users');
-    // Check if email exists
     const q = query(usersRef, where('email', '==', email));
     const snapshot = await getDocs(q);
     
@@ -38,7 +37,6 @@ router.post('/register', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const role = 'user'; // ensure defaults
     const regNumber = generateRegNumber(firstName, lastName);
 
     const docRef = await addDoc(usersRef, {
@@ -46,8 +44,10 @@ router.post('/register', async (req, res) => {
       lastName,
       email,
       password: hashedPassword,
-      role,
-      regNumber
+      role: 'user',
+      regNumber,
+      course,
+      subjects: subjects || [] // Array of subject IDs e.g. ['eng', 'bio', 'chy', 'phy']
     });
     
     res.status(201).json({ message: 'User registered successfully', userId: docRef.id, regNumber });
@@ -79,7 +79,6 @@ router.post('/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: 'Invalid credentials' });
 
-    // Build payload containing necessary frontend info
     const token = jwt.sign(
       { id: user.id, email: user.email, regNumber: user.regNumber, role: user.role },
       JWT_SECRET,
@@ -95,7 +94,9 @@ router.post('/login', async (req, res) => {
         lastName: user.lastName, 
         email: user.email, 
         regNumber: user.regNumber, 
-        role: user.role 
+        role: user.role,
+        course: user.course,
+        subjects: user.subjects
       } 
     });
   } catch (err) {
